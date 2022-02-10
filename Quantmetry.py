@@ -15,22 +15,28 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 
 
+# Class PreProcessing 
+# Pour le prétraitement des données 
 class PreProcessing : 
 
     def __init__(self, path : str) -> None:
         self.path = path
         self.df = pd.read_csv(self.path, index_col = 0).iloc[:, 1:]
 
+    # Méthode nous permet de retourner dataframe
     def get_df(self):
         return self.df
 
+    # Méthode nous permet de retourner la taille dataframe
     def get_shape(self):
         return self.df.shape
 
+    # Méthode nous permet de recupérer des infos sur dataframe ( Type des variables ...)
     def get_info(self):
         return self.df.info()
 
 
+    # Méthode nous permet d'avoir une idée sur les variables pertinentes
     def feature_selection(self):
         columns = ['cheveux', 'age', 'exp', 'salaire', 'sexe', 'diplome', 'specialite', 'note', 'dispo']
         aux_df = self.df.copy()
@@ -39,6 +45,7 @@ class PreProcessing :
         # print(aux_df.shape)
         X = aux_df.iloc[: , 1:-1]
         y =  aux_df.iloc[: , -1]
+
         # Ordinal encoding 
         oe = OrdinalEncoder()
         oe.fit(X)
@@ -46,8 +53,7 @@ class PreProcessing :
 
         model = ExtraTreesClassifier()
         model.fit(X,y)
-        # print(model.feature_importances_) #use inbuilt class feature_importances of tree based classifiers
-        # #plot graph of feature importances for better visualization
+
         plt.figure(figsize=(12, 5), dpi=80)
         plt.xlabel("Mean decrease in impurity")
         feat_importances = pd.Series(model.feature_importances_, index= columns)
@@ -55,6 +61,7 @@ class PreProcessing :
         plt.show()
         self.reset_df()
 
+    # Pour recupérer les indices des variables après le filtrage
     def get_columns_indices(self, num_col, cat_col):
         df = self.df.iloc[:,:-1]
         cols = df.columns
@@ -85,7 +92,7 @@ class PreProcessing :
     def get_target_X(self):
         return self.df.iloc[:,:-1].values, self.df.iloc[:,-1].values
 
-
+    # Traitement des données manquantes : pour les 2 types de variables 
     def pre_process_data(self, num_col, cat_col):
         X, _ = self.get_target_X()
         cat_cols, num_cols = self.get_columns_indices(num_col, cat_col)
@@ -104,40 +111,11 @@ class PreProcessing :
         imp_num = SimpleImputer(missing_values=np.nan, strategy='mean')
         X_num = imp_num.fit_transform(X_num)
 
-        # scaler = StandardScaler()
-        # scaler = scaler.fit(X_num)
-        # X_num = scaler.transform(X_num)
-
         return X_cat, X_num
 
-    # def pre_process_cat_val(self, cat_col):
-    #     X, _ = self.get_target_X()
-    #     cat_cols, _ = self.get_columns_indices()
-    #     X_cat = np.copy(X[:, cat_cols])
-    #     for col_id in range(len(cat_cols)):
-    #         unique_val, val_idx = np.unique(X_cat[:, col_id].astype(str), return_inverse=True)
-    #         X_cat[:, col_id] = val_idx
-    #     imp_cat = SimpleImputer(missing_values=0, strategy='most_frequent')
-    #     X_cat[:, range(5)] = imp_cat.fit_transform(X_cat[:, range(5)])
-
-    #     return X_cat 
-
-
-    # def pre_process_num_valu(self):
-    #     X, _ = self.get_target_X()
-    #     _,  num_cols = self.get_columns_indices()
-    #     X_num = np.copy(X[:,num_cols])
-    #     X_num = X_num.astype(float)
-    #     imp_num = SimpleImputer(missing_values=np.nan, strategy='mean')
-    #     X_num = imp_num.fit_transform(X_num)
-
-    #     return X_num
-
     
+    # Retourne les données après le prétraitement
     def get_preProcessed_data(self, num_col, cat_col):
-        # X_cat = self.pre_process_cat_val(cat_col)
-        # X_num = self.pre_process_num_valu(num_col)
-        # self.reset_df()
         X_cat, X_num = self.pre_process_data(num_col, cat_col)
         X_cat_bin = OneHotEncoder().fit_transform(X_cat).toarray()
         X = np.concatenate((X_cat_bin, X_num), axis = 1)
@@ -145,7 +123,7 @@ class PreProcessing :
 
         return X, y
 
-    
+    # Méthode qui permet d'appliqer OverSampling 
     def upSampling_df(self):
         df_majority = self.df[(self.df['embauche']==0)] 
         df_minority = self.df[(self.df['embauche']==1)] 
@@ -163,6 +141,7 @@ class PreProcessing :
 
 
 
+# Class Stats 
 class Stats():
     def __init__(self, data) -> None:
         self.df = data
